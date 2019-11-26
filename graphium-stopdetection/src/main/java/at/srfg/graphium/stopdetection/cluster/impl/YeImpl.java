@@ -53,11 +53,9 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 	private ITrack track = null;
 	
 	// Parameters
-	protected double clusterDistance = 53; // Distance parameter
-	protected int minStayDuration = 900; // Time parameter
-	// Threshold for cluster grouping before getting final clusters
-//	private double mergeBuffer = 40; // Fixed range as imitation of DBSCAN Eps search radius
-    /* private double groupRange = 0.75 * disThre; // In paper they calculate Eps as 75% of the disThre for OPTICS/DBSCAN clustering */
+	private double clusterDistance = 53; // Distance parameter
+	private int minStayDuration = 900; // Time parameter
+	private float maxStopSpeed = 10;
 
 	private int transitionId = 1;
 	private int dTempCounter = 1; // To add ID to the complete DetectedPlaces for Quality evaluation
@@ -86,10 +84,11 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 	 *            Time threshold that determine the minimum time the object has to
 	 *            be wandering around a disThre distance
 	 */
-	public YeImpl(double clusterDistance, int minStayDuration) {
+	public YeImpl(double clusterDistance, int minStayDuration, float maxStopSpeed) {
 		this();
 		this.clusterDistance = clusterDistance;
 		this.minStayDuration = minStayDuration;
+		this.maxStopSpeed = maxStopSpeed;
 	}
 	
 //	public YeImpl(double clusterDistance, int minStayDuration, double mergeBuffer) {
@@ -160,7 +159,6 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 		while (i < pointNum && j < pointNum) {
 			j = i + 1;
 			tempCluster.add(this.track.getTrackPoints().get(i));
-//			checkTempCluster();
 			
 			while (j < pointNum) {
 				// Distance calculation between previous and current point
@@ -175,42 +173,17 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 					}
 					tempCluster.clear();
 					
-					// Update iterator i to j or k if low speed
-//					boolean lowSpeedFound = false;
-//					for (int k=i; k<j; k++) {
-//						double km = (track.getTrackPoints().get(k).getDist_calc() / 1000);
-//						double h = (((double)track.getTrackPoints().get(k).getTimeDiff()) / (1000 * 60 * 60));
-//						double speed = km / h;
-//						if (speed < 5) {
-//							i = k;
-//							lowSpeedFound = true;
-//							break;
-//						}
-//					}
-//					if (!lowSpeedFound) {
 					i = j;
-//					}
 					
 					break;
 				}
 				tempCluster.add(this.track.getTrackPoints().get(j));
-//				checkTempCluster();
 				j++;
 			}
-//			// Not present in algorithm pseudo code; but apparently necessary
-//			i = j;
 		}
 
 		runtime += System.currentTimeMillis() - runtimeStart;
 	}
-	
-//	private void checkTempCluster() {
-//		for (int i=1; i<tempCluster.size(); i++) {
-//			if (!tempCluster.get(i - 1).getTimestamp().before(tempCluster.get(i).getTimestamp())) {
-//				tempCluster.get(i);
-//			}
-//		}
-//	}
 	
 	/**
 	 * Create a new stay. Merges with previous stay if both are close to each
@@ -236,9 +209,7 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 			}
 			
 			DetectedPlace detectedPlace = new DetectedPlace(clusterCentroid, dTempCounter++, this.track);
-//			if (indexExit >= this.track.getTrackPoints().size()) {
-//				System.out.println("indexExit >= this.track.getTrackPoints().size()");
-//			}
+
 			Stay stay = new Stay(clusterCentroid, timeStart, timeEnd, indexEntry, indexExit);
 			stay.setTrackLength(AnalysisUtils.calculateTrackLength(tempCluster));
 			detectedPlace.addStay(stay);
@@ -270,44 +241,10 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 				}
 			}
 
-//			tempCluster.clear();
 			lastTimeEnd = timeEnd;
 			lastTimeExit = timeEnd;
 		}
 	}
-	
-//	/**
-//	 * Remove segments between track points at the beginning and end of the cluster
-//	 * where speed is more than 10 km/h
-//	 */
-//	private void optimizeStay() {
-//		if (tempCluster.size() < 3) {
-//			return;
-//		}
-//		// Determine track point index at half duration
-//		int initialIndex = getHalfDurationIndex();
-//		//From initial index backwards
-//		double speed = 0.0;
-//		int indexStart = initialIndex + 1;
-//		do {
-//			indexStart--;
-//			if (indexStart > 0) {
-//				speed = AnalysisUtils.calculateSpeed(tempCluster.get(indexStart), tempCluster.get(indexStart - 1));
-//			}
-//		} while (speed < 10 && indexStart > 0);
-//		
-//		//From initial index upwards
-//		speed = 0.0;
-//		int indexEnd = initialIndex;
-//		do {
-//			indexEnd++;
-//			if (indexEnd < tempCluster.size() - 1) {
-//				speed = AnalysisUtils.calculateSpeed(tempCluster.get(indexEnd + 1), tempCluster.get(indexEnd));
-//			}
-//		} while (speed < 10 && indexEnd < tempCluster.size() - 1);
-//		tempCluster = tempCluster.subList(indexStart, indexEnd + 1);
-//	}
-
 
 	private int getHalfDurationIndex() {
 		int initialIndex = 0;
@@ -337,7 +274,7 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 		do {
 			indexStart++;
 			speed = AnalysisUtils.calculateSpeed(tempCluster.get(indexStart), tempCluster.get(indexStart + 1));
-		} while (speed > 10 && indexStart < tempCluster.size() - 2);
+		} while (speed > maxStopSpeed && indexStart < tempCluster.size() - 2);
 		
 		//Iterate from end
 		speed = Double.MAX_VALUE;
@@ -345,7 +282,7 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 		do {
 			indexEnd--;
 			speed = AnalysisUtils.calculateSpeed(tempCluster.get(indexEnd), tempCluster.get(indexEnd - 1));
-		} while (speed > 10 && indexEnd > 2 && indexStart < indexEnd);
+		} while (speed > maxStopSpeed && indexEnd > 2 && indexStart < indexEnd);
 		if (indexStart < indexEnd) {
 			tempCluster = tempCluster.subList(indexStart, indexEnd + 1);
 		} else {
@@ -368,162 +305,12 @@ public class YeImpl extends AbstractAnalysisMethod implements IAnalysisMethod {
 			createStay();
 		}
 
-//		clusterWithDbScan();
-//		clusterDetectedPlaces();
-
 		runtime += System.currentTimeMillis() - runtimeStart;
+		
+		super.detectedPlaces.addAll(this.tmpDetectedPlaces);
 		
 		super.doAfterProcessing();
 	}
-	
-//	private void clusterWithDbScan() {
-//		for (DetectedPlace dP : tmpDetectedPlaces) {
-//			pointList.add(new DoublePointWithPlace(new double[] { dP.getLocation().getX(), dP.getLocation().getY() }, dP));
-//		}
-//		List<Cluster<DoublePointWithPlace>> clusterList = pointClusterer.cluster(pointList);
-//		int detectedPlaceID = 1;
-//		
-//		for (Cluster<DoublePointWithPlace> cluster : clusterList) {
-//			List<ITrackPoint> trackPointList = new ArrayList<ITrackPoint>();
-//			DetectedPlace detectedPlace = new DetectedPlace();
-//			for (DoublePointWithPlace place : cluster.getPoints()) {
-//				ITrackPoint point = new TrackPointImpl();
-//				point.setGeometry(GeometryUtils.createPoint2D(place.getPoint()[0], place.getPoint()[1], 4326));
-//				trackPointList.add(point);
-////				place.getTimestamp().getStays().forEach(stay -> detectedPlace.addStay(stay));
-//				for (Stay stay : place.getPlace().getStays()) {
-//					detectedPlace.addStay(stay);
-//				}
-//			}
-//			detectedPlace.setLocation(AnalysisUtils.calculateCentroid(trackPointList));
-//			detectedPlace.setPlaceId(detectedPlaceID++);
-//			detectedPlace.setTrack(cluster.getPoints().get(0).getPlace().getTrack());
-//			super.getDetectedPlaces().add(detectedPlace);
-//		}
-//	}
-//
-//	/**
-//	 * Alternative to clustering with DB scan
-//	 */
-//	@SuppressWarnings("unused")
-//	private void clusterDetectedPlaces() {
-//		/**
-//		 * DP POST-PROCESSING: "CONVEXHULL SOLUTION"<br>
-//		 * NOTE: the stay used for the spatio-temporal approaches can have its
-//		 * own coordinates used to store the specific location at which such
-//		 * stay was detected
-//		 */
-//		
-//		
-//		/**
-//		 * Creating groups of close points. Initial dPs only have one stay. If
-//		 * two initial dPs are close, their associated stays are merged to a
-//		 * unique dP in the detectedGroups list
-//		 */
-//		int dTempCounter = 1;
-//		for (DetectedPlace dTemp : tmpDetectedPlaces) {
-//			
-//			if (detectedGroups.size() == 0) {
-//				dTemp.setPlaceId(dTempCounter++);
-//				detectedGroups.add(dTemp);
-//				continue;
-//			}
-//			
-//			DetectedPlace closestDp = null;
-//			double closestDpDistance = mergeBuffer;
-//			
-//			// Iterate detectedPlaces
-//			for (DetectedPlace detectedGroup : detectedGroups) {
-//				// Iterate stays of detected group
-//				for (Stay stay : detectedGroup.getStays()) {
-//					
-//					Coordinate teC = stay.getPoint().getCoordinate();
-//					Coordinate dpC = dTemp.getLocation().getCoordinate();
-//					
-//					double distanceRangeLength = AnalysisUtils.calculateDistance(dpC, teC);
-//					
-////					// Check if dTemp is too far away
-////					if (distanceRangeLength > groupRange * 3) break;
-//					
-//					if (distanceRangeLength < closestDpDistance) {
-//						closestDpDistance = distanceRangeLength;
-//						closestDp = detectedGroup;
-//					}
-//				}
-//			}
-//			if (closestDp != null) {
-//				closestDp.addStay(dTemp.getStays().get(0));
-//			} else {
-//				dTemp.setPlaceId(dTempCounter++);
-//				detectedGroups.add(dTemp);
-//			}
-//		}
-//		
-//		/**
-//		 * Merging close groups
-//		 */
-//		int dGroupCounter = 1;
-//		for (DetectedPlace dGroup : detectedGroups) { 
-//			DetectedPlace closestDetectedPlace = null;
-//			
-//			if (detectedPlaces.size() == 0) {
-//				// Set first detected place
-//				dGroup.setPlaceId(dGroupCounter++);
-//				detectedPlaces.add(dGroup);
-//				continue;
-//			}
-//			
-//			// Iterate final detected places
-//			for (DetectedPlace detectedPlace : detectedPlaces) {
-//				// If the detectedGroup contains at least two stays, it is compared for merging with other group
-//				//TODO [SGroe] i don't understand, why groups with 1 stay are directly added to detected places
-//				if (dGroup.getStays().size() < 2) break;
-//				
-//				// Iterate stays inside each final detectedPlace
-//				for (Stay detectedPlaceStay : detectedPlace.getStays()) {
-//					// Compare every stay inside the final detectedPlace with every stay inside the considered dGroup
-//					for (Stay detectedGroupStay : dGroup.getStays()) {
-//						Coordinate teC = detectedPlaceStay.getPoint().getCoordinate();
-//						Coordinate geC = detectedGroupStay.getPoint().getCoordinate();
-//						
-//						double distanceRangeLength = AnalysisUtils.calculateDistance(geC, teC);
-//						
-////						// First, checks if the point is too far so as to avoid more tests
-////						if (distanceRangeLength > groupRange * 10) break;
-//						
-//						// If any of the points in the group is within the groupRange distance, both groups are merged
-//						if (distanceRangeLength <= mergeBuffer) {
-//							closestDetectedPlace = detectedPlace;
-//							break;
-//						}
-//					}
-//					if (closestDetectedPlace != null) break;
-//				}
-//			}
-//			
-//			if (closestDetectedPlace != null) {
-//				closestDetectedPlace.getStays().addAll(dGroup.getStays());
-//			} else {
-//				dGroup.setPlaceId(dGroupCounter++);
-//				detectedPlaces.add(dGroup);
-//			}
-//		}
-//		
-//		/*
-//		 * Set a new centroid for each detected place
-//		 */
-//		for (DetectedPlace dPlace : detectedPlaces) {
-//			if (dPlace.getStays().size() < 2) continue;
-//			
-//			Coordinate[] tePointsArray = new Coordinate[dPlace.getStays().size()];
-//			for (int t = 0; t < dPlace.getStays().size(); t++) {
-//				tePointsArray[t] = dPlace.getStays().get(t).getPoint().getCoordinate();
-//			}
-//			
-//			// creates a convexHull for the points and calculates the centroid of the convex hull
-//			dPlace.setLocation(AnalysisUtils.calculateConvexHullCentroid(tePointsArray));	
-//		}
-//	}
 	
 	@Override
 	public String getFileIdentifier() {

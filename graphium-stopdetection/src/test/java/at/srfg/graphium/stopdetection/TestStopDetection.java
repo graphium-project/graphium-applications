@@ -91,7 +91,7 @@ public class TestStopDetection {
 			sg.getPoints().forEach(p -> {
 				ITrackPoint graphiumTrackPoint = new TrackPointImpl();
 				graphiumTrackPoint.setPoint(GeometryUtils.createPoint(new Coordinate(p.getLongitude().doubleValue(), p.getLatitude().doubleValue()), 4326));
-				graphiumTrackPoint.setTimestamp(new Date(p.getTime().get().toEpochSecond()));
+				graphiumTrackPoint.setTimestamp(new Date(p.getTime().get().toEpochSecond() * 1000 + (long)(p.getTime().get().getNano() / 1000000)));
 				track.getTrackPoints().add(graphiumTrackPoint);
 			});
 		});
