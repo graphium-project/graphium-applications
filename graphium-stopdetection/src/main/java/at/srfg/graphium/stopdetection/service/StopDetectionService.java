@@ -28,7 +28,10 @@ import org.slf4j.LoggerFactory;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
+import at.srfg.graphium.core.exception.GraphNotExistsException;
 import at.srfg.graphium.geomutils.GeometryUtils;
+import at.srfg.graphium.mapmatching.model.IMatchedBranch;
+import at.srfg.graphium.mapmatching.model.IMatchedWaySegment;
 import at.srfg.graphium.mapmatching.model.ITrack;
 import at.srfg.graphium.mapmatching.model.ITrackPoint;
 import at.srfg.graphium.mapmatching.model.impl.TrackImpl;
@@ -37,6 +40,7 @@ import at.srfg.graphium.mapmatching.model.impl.TrackPointImpl;
 import at.srfg.graphium.stopdetection.cluster.IAnalysisMethod;
 import at.srfg.graphium.stopdetection.csv.StopCsvWriter;
 import at.srfg.graphium.stopdetection.model.impl.DetectedPlace;
+import at.srfg.graphium.stopdetection.model.impl.Stay;
 import io.jenetics.jpx.GPX;
 import io.jenetics.jpx.Track;
 
@@ -49,8 +53,9 @@ public class StopDetectionService {
 	private static Logger log = LoggerFactory.getLogger(StopDetectionService.class);
 	
 	private IAnalysisMethod analysisMethod;
+	private MapMatchingService mapMatchingService;
 	
-	public String detectStops(InputStream gpxFile) throws IOException {
+	public String detectStops(InputStream gpxFile, String graphNameHighLevel, String graphNameLowLevel) throws IOException, GraphNotExistsException {
 		log.info("Detecting stops...");
 		
 		List<DetectedPlace> places = new ArrayList<DetectedPlace>();
@@ -60,13 +65,63 @@ public class StopDetectionService {
 			ITrack track = convertTrackToGraphium(gpxTrack);
 			processTrack(track, true);
 			doAfterProcessing(track);
-			places.addAll(analysisMethod.getDetectedPlaces());
+			
+			//Map matching
+			List<IMatchedBranch> matchedTrackHighLevel = null;
+			List<IMatchedBranch> matchedTrackLowLevel = null;
+			if (graphNameHighLevel != null) {
+				matchedTrackHighLevel = mapMatchingService.matchTrack(track, graphNameHighLevel);
+			}
+			if (graphNameLowLevel != null) {
+				matchedTrackLowLevel = mapMatchingService.matchTrack(track, graphNameLowLevel);
+			}
+
+			for (DetectedPlace place : analysisMethod.getDetectedPlaces()) {
+				for (Stay stay : place.getStays()) {
+					int index = (stay.getTrackPointIndexExit() + stay.getTrackPointIndexEntry()) / 2;
+
+					if (graphNameHighLevel != null) {
+						for (IMatchedBranch branch : matchedTrackHighLevel) {
+							for (IMatchedWaySegment segment : branch.getMatchedWaySegments()) {
+								if (segment.getStartPointIndex() <= index && index < segment.getEndPointIndex()) {
+									stay.setDistanceToHighLevelRoad(segment.getDistance(index));
+									stay.setFrcOfNextHighLevelRoad(segment.getSegment().getFrc());
+									stay.setFowOfNextHighLevelRoad(segment.getSegment().getFormOfWay());
+									break;
+									
+								} else if (index < segment.getStartPointIndex()) {
+									// Could not find segment -> cancel search
+									break;
+								}
+							}
+						}
+					}
+					
+					if (graphNameLowLevel != null) {
+						for (IMatchedBranch branch : matchedTrackLowLevel) {
+							for (IMatchedWaySegment segment : branch.getMatchedWaySegments()) {
+								if (segment.getStartPointIndex() <= index && index < segment.getEndPointIndex()) {
+									stay.setDistanceToLowLevelRoad(segment.getDistance(index));
+									stay.setFrcOfNextLowLevelRoad(segment.getSegment().getFrc());
+									stay.setFowOfNextLowLevelRoad(segment.getSegment().getFormOfWay());
+									break;
+									
+								} else if (index < segment.getStartPointIndex()) {
+									// Could not find segment -> cancel search
+									break;
+								}
+							}
+						}
+					}
+				}
+			
+				places.add(place);
+			}
 		}
 
 		StringWriter csvWriter = new StringWriter();
 		StopCsvWriter stopCsvWriter = new StopCsvWriter();
 		stopCsvWriter.write(csvWriter, places);
-//		writeResults(null, places, "20171114" + analysisMethod.getClass().getName());
 		
 		log.info("Detecting stops finished!");
 		
@@ -148,6 +203,14 @@ public class StopDetectionService {
 
 	public void setAnalysisMethod(IAnalysisMethod analysisMethod) {
 		this.analysisMethod = analysisMethod;
+	}
+
+	public MapMatchingService getMapMatchingService() {
+		return mapMatchingService;
+	}
+
+	public void setMapMatchingService(MapMatchingService mapMatchingService) {
+		this.mapMatchingService = mapMatchingService;
 	}
 
 }

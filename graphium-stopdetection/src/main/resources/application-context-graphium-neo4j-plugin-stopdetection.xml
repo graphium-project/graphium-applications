@@ -18,7 +18,7 @@
 	<!-- controller -->
 	<bean id="stopDetectionController" 
 		class="at.srfg.graphium.stopdetection.controller.StopDetectionController" scope="prototype">
-		<property name="stopDetectionService" ref="analysisYe" />
+		<property name="stopDetectionService" ref="stopDetectionService" />
 	</bean>
 
 </beans>

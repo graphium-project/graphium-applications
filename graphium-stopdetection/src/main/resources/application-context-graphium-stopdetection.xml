@@ -11,17 +11,24 @@
         http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
 
 	
-	<bean id="stopDetectionProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-   		<property name="location" value="classpath:stop_detection.properties" />
-    </bean>
-    
-    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-        <property name="location" value="classpath:stop_detection.properties" />
-		<property name="ignoreUnresolvablePlaceholders" value="true" />
-    </bean>
+	<bean id="stopDetectionConfigurer"
+		class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="#{environment.getProperty('graphium.conf.path','classpath:')}stop_detection.properties" />
+	</bean>
     
 	<bean id="analysisYe" class="at.srfg.graphium.stopdetection.cluster.impl.YeImpl" scope="prototype">
 		<constructor-arg index="0" value="${stopdetection.ye.distance}" />
 		<constructor-arg index="1" value="${stopdetection.ye.time_interval}" />
+		<constructor-arg index="2" value="${stopdetection.ye.max_stop_speed}" />
 	</bean>
+	
+	<bean id="stopDetectoinMapMatchingService" class="at.srfg.graphium.stopdetection.service.MapMatchingService" scope="prototype" >
+		<property name="mapMatcher" ref="neo4jMapMatcher" />
+	</bean>
+
+	<bean id="stopDetectionService" class="at.srfg.graphium.stopdetection.service.StopDetectionService" scope="prototype" >
+		<property name="analysisMethod" ref="analysisYe" />
+		<property name="mapMatchingService" ref="stopDetectoinMapMatchingService" />
+	</bean>
+	
 </beans>
