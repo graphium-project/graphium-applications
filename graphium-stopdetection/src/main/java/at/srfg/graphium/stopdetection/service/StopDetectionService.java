@@ -13,26 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.srfg.graphium.stopdetection;
+package at.srfg.graphium.stopdetection.service;
 
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.annotation.Resource;
-
-import org.apache.log4j.Logger;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -43,34 +35,26 @@ import at.srfg.graphium.mapmatching.model.impl.TrackImpl;
 import at.srfg.graphium.mapmatching.model.impl.TrackMetadataImpl;
 import at.srfg.graphium.mapmatching.model.impl.TrackPointImpl;
 import at.srfg.graphium.stopdetection.cluster.IAnalysisMethod;
+import at.srfg.graphium.stopdetection.csv.StopCsvWriter;
 import at.srfg.graphium.stopdetection.model.impl.DetectedPlace;
 import io.jenetics.jpx.GPX;
 import io.jenetics.jpx.Track;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "classpath:/application-context-fcd-stopdetection-test.xml" })
-public class TestStopDetection {
-	protected Logger log = Logger.getLogger(this.getClass().getName());
-
-	@Resource(name="analysisYe")
+/**
+ * @author mwimmer
+ *
+ */
+public class StopDetectionService {
+	
+	private static Logger log = LoggerFactory.getLogger(StopDetectionService.class);
+	
 	private IAnalysisMethod analysisMethod;
 	
-	private String outputDir = "D:\\tmp\\";
-
-    private boolean writeResultToCSVs = true;
-
-	@Test
-	public void testStopDetection() throws IOException {
-		
+	public String detectStops(InputStream gpxFile) throws IOException {
 		log.info("Detecting stops...");
 		
-		initialize();
-
 		List<DetectedPlace> places = new ArrayList<DetectedPlace>();
 		
-		File gpxFile = new File("D:\\daten\\digibus\\accuracy\\tracks\\770_without_timezone.gpx");
-		
-		log.info("TrackID: " + gpxFile);
 		doBeforeProcessing(null);
 		for (Track gpxTrack : readGpxTracks(gpxFile)) {
 			ITrack track = convertTrackToGraphium(gpxTrack);
@@ -78,16 +62,22 @@ public class TestStopDetection {
 			doAfterProcessing(track);
 			places.addAll(analysisMethod.getDetectedPlaces());
 		}
+
+		StringWriter csvWriter = new StringWriter();
+		StopCsvWriter stopCsvWriter = new StopCsvWriter();
+		stopCsvWriter.write(csvWriter, places);
+//		writeResults(null, places, "20171114" + analysisMethod.getClass().getName());
 		
-		writeResults(null, places, "20171114" + analysisMethod.getClass().getName());
+		log.info("Detecting stops finished!");
 		
-		log.info("Finished!");
+		return csvWriter.toString();
+
 	}
 
-	private List<Track> readGpxTracks(File gpxFile) throws IOException {
+	private List<Track> readGpxTracks(InputStream gpxFile) throws IOException {
 		List<Track> tracks = new ArrayList<Track>();
 		
-		Iterator<Track> it = GPX.read(new FileInputStream(gpxFile)).tracks().iterator();
+		Iterator<Track> it = GPX.read(gpxFile).tracks().iterator();
 		while (it.hasNext()) {
 			Track track = it.next();
 			if (track != null) {
@@ -115,30 +105,6 @@ public class TestStopDetection {
 		return track;
 	}
 
-    private void writeResults(List<ITrack> tracks, List<DetectedPlace> places, String filename) throws IOException {
-		log.info("Test done, got " + places.size() + " places calculated results");
-
-        if (writeResultToCSVs) {
-        	File stopFileCsv = new File(outputDir + "/stops_" + filename + ".csv");
-            writeCSV(stopFileCsv, places);
-        }
-	}
-	
-	private void writeCSV(File stopFile, List<DetectedPlace> places) throws IOException {
-		log.info("Write CSV ...");
-		
-		StopCsvWriter writerCsv = new StopCsvWriter();
-		try (FileWriter travelFileWriter = new FileWriter(stopFile)) {
-			writerCsv.write(travelFileWriter, places);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	protected void initialize() {
-//		dateTimeFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-	}
-	
 	/**
 	 * Initializes analysis methods
 	 * @param params
@@ -176,17 +142,12 @@ public class TestStopDetection {
 		analysisMethod.doAfterProcessing();
 	}
 
-	public static Comparator<at.srfg.graphium.mapmatching.model.ITrack> getTrackStartDateComparator() {
-		return new Comparator<ITrack>() {
-			public int compare(ITrack t1, ITrack t2) {
-				if (t1.getMetadata().getStartDate().equals(t2.getMetadata().getStartDate())) {
-					return 0;
-				} else if (t1.getMetadata().getStartDate().before(t2.getMetadata().getStartDate())) {
-					return -1;
-				} else {
-					return 1;
-				}
-			}
-		};
+	public IAnalysisMethod getAnalysisMethod() {
+		return analysisMethod;
 	}
+
+	public void setAnalysisMethod(IAnalysisMethod analysisMethod) {
+		this.analysisMethod = analysisMethod;
+	}
+
 }
