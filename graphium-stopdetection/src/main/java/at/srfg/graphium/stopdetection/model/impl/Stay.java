@@ -4,8 +4,11 @@ import java.util.Date;
 
 import com.vividsolutions.jts.geom.Point;
 
+import at.srfg.graphium.model.FormOfWay;
+import at.srfg.graphium.model.FuncRoadClass;
+
 /**
- * Class created to store the visits to the place in form of timeEntry and timeExit.
+ * Class created to store the stays at a place in form of timeEntry and timeExit.
  */
 public class Stay {
 	
@@ -16,6 +19,13 @@ public class Stay {
 	private int trackPointIndexExit;
 	private int matchedStays = 0;
 	private double trackLength = 0.0;
+	
+	private double distanceToHighLevelRoad = Double.MAX_VALUE;
+	private FuncRoadClass frcOfNextHighLevelRoad = null;
+	private FormOfWay fowOfNextHighLevelRoad = null;
+	private double distanceToLowLevelRoad = Double.MAX_VALUE;
+	private FuncRoadClass frcOfNextLowLevelRoad = null;
+	private FormOfWay fowOfNextLowLevelRoad = null;
 
 	public Stay() {
 		this.point = null;
@@ -81,18 +91,6 @@ public class Stay {
 	public void setTrackPointIndexExit(int trackPointIndexExit) {
 		this.trackPointIndexExit = trackPointIndexExit;
 	}
-	
-	/**
-	 * matchedStays
-	 */
-	@Deprecated
-	public int getMatchedStays() {
-		return matchedStays;
-	}
-	@Deprecated
-	public void setMatchedStays(int matchedStays) {
-		this.matchedStays = matchedStays;
-	}
 
 	/**
 	 * track length
@@ -112,6 +110,66 @@ public class Stay {
 		return duration;
 	}
 
+	/**
+	 * distanceToHighLevelRoad
+	 */
+	public double getDistanceToHighLevelRoad() {
+		return distanceToHighLevelRoad;
+	}
+	public void setDistanceToHighLevelRoad(double distanceToHighLevelRoad) {
+		this.distanceToHighLevelRoad = distanceToHighLevelRoad;
+	}
+
+	/**
+	 * frcOfNextHighLevelRoad
+	 */
+	public FuncRoadClass getFrcOfNextHighLevelRoad() {
+		return frcOfNextHighLevelRoad;
+	}
+	public void setFrcOfNextHighLevelRoad(FuncRoadClass frcOfNextHighLevelRoad) {
+		this.frcOfNextHighLevelRoad = frcOfNextHighLevelRoad;
+	}
+
+	/**
+	 * fowOfNextHighLevelRoad
+	 */
+	public FormOfWay getFowOfNextHighLevelRoad() {
+		return fowOfNextHighLevelRoad;
+	}
+	public void setFowOfNextHighLevelRoad(FormOfWay fowOfNextHighLevelRoad) {
+		this.fowOfNextHighLevelRoad = fowOfNextHighLevelRoad;
+	}
+
+	/**
+	 * distanceToLowLevelRoad
+	 */
+	public double getDistanceToLowLevelRoad() {
+		return distanceToLowLevelRoad;
+	}
+	public void setDistanceToLowLevelRoad(double distanceToLowLevelRoad) {
+		this.distanceToLowLevelRoad = distanceToLowLevelRoad;
+	}
+
+	/**
+	 * frcOfNextLowLevelRoad
+	 */
+	public FuncRoadClass getFrcOfNextLowLevelRoad() {
+		return frcOfNextLowLevelRoad;
+	}
+	public void setFrcOfNextLowLevelRoad(FuncRoadClass frcOfNextLowLevelRoad) {
+		this.frcOfNextLowLevelRoad = frcOfNextLowLevelRoad;
+	}
+
+	/**
+	 * fowOfNextLowLevelRoad
+	 */
+	public FormOfWay getFowOfNextLowLevelRoad() {
+		return fowOfNextLowLevelRoad;
+	}
+	public void setFowOfNextLowLevelRoad(FormOfWay fowOfNextLowLevelRoad) {
+		this.fowOfNextLowLevelRoad = fowOfNextLowLevelRoad;
+	}
+	
 	@Override
 	public String toString() {
 		return "{point: " + point.toString() + ", timeEntry: " + timeEntry + ", timeExit: " + timeExit + ", trackPointIndexEntry: " +

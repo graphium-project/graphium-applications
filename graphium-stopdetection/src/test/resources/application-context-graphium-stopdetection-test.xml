@@ -1,0 +1,30 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+        http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+
+	
+	<bean id="stopDetectionProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+   		<property name="location" value="classpath:stop_detection.properties" />
+    </bean>
+    
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:stop_detection.properties" />
+		<property name="ignoreUnresolvablePlaceholders" value="true" />
+    </bean>
+    
+	<bean id="analysisYe" class="at.srfg.graphium.stopdetection.cluster.impl.YeImpl" scope="prototype">
+		<constructor-arg index="0" value="${stopdetection.ye.distance}" />
+		<constructor-arg index="1" value="${stopdetection.ye.time_interval}" />
+		<constructor-arg index="2" value="${stopdetection.ye.max_stop_speed}" />
+	</bean>
+    
+	<bean id="mapMatchingService" class="at.srfg.graphium.stopdetection.service.MapMatchingService" scope="prototype" />
+</beans>
