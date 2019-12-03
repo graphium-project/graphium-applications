@@ -22,13 +22,13 @@
 		<constructor-arg index="2" value="${stopdetection.ye.max_stop_speed}" />
 	</bean>
 	
-	<bean id="stopDetectoinMapMatchingService" class="at.srfg.graphium.stopdetection.service.MapMatchingService" scope="prototype" >
+	<bean id="stopDetectionMapMatchingService" class="at.srfg.graphium.stopdetection.service.MapMatchingService" scope="prototype" >
 		<property name="mapMatcher" ref="neo4jMapMatcher" />
 	</bean>
 
 	<bean id="stopDetectionService" class="at.srfg.graphium.stopdetection.service.StopDetectionService" scope="prototype" >
 		<property name="analysisMethod" ref="analysisYe" />
-		<property name="mapMatchingService" ref="stopDetectoinMapMatchingService" />
+		<property name="mapMatchingService" ref="stopDetectionMapMatchingService" />
 	</bean>
 	
 </beans>
