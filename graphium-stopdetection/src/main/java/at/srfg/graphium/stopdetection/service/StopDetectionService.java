@@ -84,9 +84,9 @@ public class StopDetectionService {
 						for (IMatchedBranch branch : matchedTrackHighLevel) {
 							for (IMatchedWaySegment segment : branch.getMatchedWaySegments()) {
 								if (segment.getStartPointIndex() <= index && index < segment.getEndPointIndex()) {
-									stay.setDistanceToHighLevelRoad(segment.getDistance(index));
-									stay.setFrcOfNextHighLevelRoad(segment.getSegment().getFrc());
-									stay.setFowOfNextHighLevelRoad(segment.getSegment().getFormOfWay());
+									double distance = GeometryUtils.distanceMeters(segment.getGeometry(), stay.getPoint());
+									stay.setDistanceToHighLevelRoad(distance);
+									stay.setNextHighLevelRoadSegment(segment.getSegment());
 									break;
 									
 								} else if (index < segment.getStartPointIndex()) {
@@ -101,9 +101,9 @@ public class StopDetectionService {
 						for (IMatchedBranch branch : matchedTrackLowLevel) {
 							for (IMatchedWaySegment segment : branch.getMatchedWaySegments()) {
 								if (segment.getStartPointIndex() <= index && index < segment.getEndPointIndex()) {
-									stay.setDistanceToLowLevelRoad(segment.getDistance(index));
-									stay.setFrcOfNextLowLevelRoad(segment.getSegment().getFrc());
-									stay.setFowOfNextLowLevelRoad(segment.getSegment().getFormOfWay());
+									double distance = GeometryUtils.distanceMeters(segment.getGeometry(), stay.getPoint());
+									stay.setDistanceToLowLevelRoad(distance);
+									stay.setNextLowLevelRoadSegment(segment.getSegment());
 									break;
 									
 								} else if (index < segment.getStartPointIndex()) {
@@ -120,7 +120,7 @@ public class StopDetectionService {
 		}
 
 		StringWriter csvWriter = new StringWriter();
-		StopCsvWriter stopCsvWriter = new StopCsvWriter();
+		StopCsvWriter<DetectedPlace> stopCsvWriter = new StopCsvWriter<DetectedPlace>();
 		stopCsvWriter.write(csvWriter, places);
 		
 		log.info("Detecting stops finished!");
