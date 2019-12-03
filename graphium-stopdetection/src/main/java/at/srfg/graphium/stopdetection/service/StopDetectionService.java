@@ -180,11 +180,6 @@ public class StopDetectionService {
 			return;
 		}
 		
-//		/** Pre-process track */
-//		if (preprocessTrackPoints) {
-//			TrackPreprocessingFilter.preprocessTrack(track, true);
-//		}
-		
 		/** Process track... */
 		log.info("Processing ... " + track.getMetadata().getStartDate() + " (" + track.getTrackPoints().size() + " Trackpoints) > " + analysisMethod);
 		track.calculateTrackPointValues();
