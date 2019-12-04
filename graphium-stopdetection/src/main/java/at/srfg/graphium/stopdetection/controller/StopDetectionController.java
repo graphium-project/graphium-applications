@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -46,8 +47,28 @@ public class StopDetectionController {
 	
 	@RequestMapping(value="/graphs/{graph}/detectstops", method=RequestMethod.POST)
     public ResponseEntity<String> detectStops(
+    		@PathVariable(value = "graph") String graphName,
+    		@RequestParam(value = "file") MultipartFile file) 
+    		throws GraphNotExistsException, IOException {
+
+		if (!file.isEmpty()) {
+			InputStream fileIn = getInputStream(file);
+			
+			return ResponseEntity.ok()
+//	                .header("Content-Disposition", "attachment; filename=" + reportName + ".csv")
+					.header("Content-Disposition")
+//	                .contentLength(file.length())
+	                .contentType(MediaType.parseMediaType("text/csv"))
+	                .body(stopDetectionService.detectStops(fileIn, graphName, null));
+		}
+		
+		return null;
+	}
+	
+	@RequestMapping(value="/detectstops", method=RequestMethod.POST)
+    public ResponseEntity<String> detectStops(
     		@RequestParam(value = "graphHighLevel") String graphNameHighLevel,
-    		@RequestParam(value = "graphLowLevel", required = false) String graphNameLowLevel,
+    		@RequestParam(value = "graphLowLevel") String graphNameLowLevel,
     		@RequestParam(value = "file") MultipartFile file) 
     		throws GraphNotExistsException, IOException {
 
@@ -60,7 +81,6 @@ public class StopDetectionController {
 //	                .contentLength(file.length())
 	                .contentType(MediaType.parseMediaType("text/csv"))
 	                .body(stopDetectionService.detectStops(fileIn, graphNameHighLevel, graphNameLowLevel));
-			
 		}
 		
 		return null;
