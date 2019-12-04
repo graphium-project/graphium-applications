@@ -78,43 +78,14 @@ public class StopDetectionService {
 
 			for (DetectedPlace place : analysisMethod.getDetectedPlaces()) {
 				for (Stay stay : place.getStays()) {
-					int index = (stay.getTrackPointIndexExit() + stay.getTrackPointIndexEntry()) / 2;
-
 					if (graphNameHighLevel != null) {
-						for (IMatchedBranch branch : matchedTrackHighLevel) {
-							for (IMatchedWaySegment segment : branch.getMatchedWaySegments()) {
-								if (segment.getStartPointIndex() <= index && index < segment.getEndPointIndex()) {
-									double distance = GeometryUtils.distanceMeters(segment.getGeometry(), stay.getPoint());
-									stay.setDistanceToHighLevelRoad(distance);
-									stay.setNextHighLevelRoadSegment(segment.getSegment());
-									break;
-									
-								} else if (index < segment.getStartPointIndex()) {
-									// Could not find segment -> cancel search
-									break;
-								}
-							}
-						}
+						findNextRoadSegment(matchedTrackHighLevel, stay, "high");
 					}
 					
 					if (graphNameLowLevel != null) {
-						for (IMatchedBranch branch : matchedTrackLowLevel) {
-							for (IMatchedWaySegment segment : branch.getMatchedWaySegments()) {
-								if (segment.getStartPointIndex() <= index && index < segment.getEndPointIndex()) {
-									double distance = GeometryUtils.distanceMeters(segment.getGeometry(), stay.getPoint());
-									stay.setDistanceToLowLevelRoad(distance);
-									stay.setNextLowLevelRoadSegment(segment.getSegment());
-									break;
-									
-								} else if (index < segment.getStartPointIndex()) {
-									// Could not find segment -> cancel search
-									break;
-								}
-							}
-						}
+						findNextRoadSegment(matchedTrackLowLevel, stay, "low");
 					}
 				}
-			
 				places.add(place);
 			}
 		}
@@ -127,6 +98,63 @@ public class StopDetectionService {
 		
 		return csvWriter.toString();
 
+	}
+
+	private void findNextRoadSegment(List<IMatchedBranch> matchedTrackHighLevel, Stay stay, String level) {
+		int stopIndex = (stay.getTrackPointIndexExit() + stay.getTrackPointIndexEntry()) / 2;
+		for (IMatchedBranch branch : matchedTrackHighLevel) {
+			int segmentIndex = -1;
+			int segmentIndexBeforeStop = -1;
+			int segmentIndexAfterStop = -1;
+			for (int i=0; i<branch.getMatchedWaySegments().size(); i++) {
+				IMatchedWaySegment segment = branch.getMatchedWaySegments().get(i);
+				if (segment.getStartPointIndex() <= stopIndex && stopIndex < segment.getEndPointIndex()) {
+					segmentIndex = i;
+					break;
+				} else if (stopIndex < segment.getStartPointIndex()) {
+					// First matched segment after stop
+					segmentIndexAfterStop = i;
+					break;
+				} else {
+					// Last matched segment before stop
+					segmentIndexBeforeStop = i;
+				}
+			}
+			if (segmentIndex == -1) {
+				// use index before or after the stop
+				if (segmentIndexBeforeStop >= 0 && segmentIndexAfterStop == -1) {
+					segmentIndex = segmentIndexBeforeStop;
+				} else if (segmentIndexAfterStop >= 0 && segmentIndexBeforeStop == -1) {
+					segmentIndex = segmentIndexAfterStop;
+				}
+			}
+			//Calculate distance
+			if (segmentIndex >= 0) {
+				IMatchedWaySegment segment = branch.getMatchedWaySegments().get(segmentIndex);
+				double distance = GeometryUtils.distanceMeters(segment.getGeometry(), stay.getPoint());
+				if (level.equals("high")) {
+					stay.setDistanceToHighLevelRoad(distance);
+					stay.setNextHighLevelRoadSegment(segment.getSegment());
+				} else {
+					stay.setDistanceToLowLevelRoad(distance);
+					stay.setNextLowLevelRoadSegment(segment.getSegment());
+				}
+				break;
+				
+			} else if (segmentIndexBeforeStop >= 0 && segmentIndexAfterStop >= 0) {
+				IMatchedWaySegment segmentBefore = branch.getMatchedWaySegments().get(segmentIndexBeforeStop);
+				double distanceBefore = GeometryUtils.distanceMeters(segmentBefore.getGeometry(), stay.getPoint());
+				IMatchedWaySegment segmentAfter = branch.getMatchedWaySegments().get(segmentIndexAfterStop);
+				double distanceAfter = GeometryUtils.distanceMeters(segmentAfter.getGeometry(), stay.getPoint());
+				if (level.equals("high")) {
+					stay.setDistanceToHighLevelRoad((distanceBefore < distanceAfter) ? distanceBefore : distanceAfter);
+					stay.setNextHighLevelRoadSegment((distanceBefore < distanceAfter) ? segmentBefore.getSegment() : segmentAfter.getSegment());
+				} else {
+					stay.setDistanceToLowLevelRoad((distanceBefore < distanceAfter) ? distanceBefore : distanceAfter);
+					stay.setNextLowLevelRoadSegment((distanceBefore < distanceAfter) ? segmentBefore.getSegment() : segmentAfter.getSegment());
+				}
+			}
+		}
 	}
 
 	private List<Track> readGpxTracks(InputStream gpxFile) throws IOException {

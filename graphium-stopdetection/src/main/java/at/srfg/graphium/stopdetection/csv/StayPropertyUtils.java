@@ -64,16 +64,14 @@ public class StayPropertyUtils {
 	 * @param track
 	 */
 	public static double getSummedAngles(Stay stay, ITrack track) {
-		List<? extends ITrackPoint> trackpoints = track.getTrackPoints().subList(stay.getTrackPointIndexEntry(), stay.getTrackPointIndexExit() + 1);
-		Coordinate[] coords = new Coordinate[trackpoints.size()];
-		for (int i=0; i<trackpoints.size(); i++) {
-			coords[i] = trackpoints.get(i).getPoint().getCoordinate();
-		}
-		LineString line = GeometryUtils.createLineString(coords, 4326);
-//		TopologyPreservingSimplifier.simplify(line, 0.0001);
-		Coordinate[] simplified = TopologyPreservingSimplifier.simplify(line, 0.0001).getCoordinates();
+		Coordinate[] simplified = getSimplifiedTrackGeom(stay, track).getCoordinates();
 		double angleSum = 0.0;
 		for (int i = 1; i < simplified.length - 1; i++) {
+			if (simplified[i-1].x == simplified[i].x && simplified[i-1].y == simplified[i].y) {
+				continue; //equal coordinates
+			} else if (simplified[i].x == simplified[i+1].x && simplified[i].y == simplified[i+1].y) {
+				continue; //equal coordinates
+			}
 			angleSum += 180 - AnalysisUtils.calculateDirectionChangeAngle(simplified[i-1], simplified[i], simplified[i+1]);
 		}
 		return angleSum;
@@ -149,6 +147,6 @@ public class StayPropertyUtils {
 		}
 		LineString line = GeometryUtils.createLineString(coords, 4326);
 //		TopologyPreservingSimplifier.simplify(line, 0.0001);
-		return (LineString)TopologyPreservingSimplifier.simplify(line, 0.0003);
+		return (LineString)TopologyPreservingSimplifier.simplify(line, 0.0001);
 	}
 }
