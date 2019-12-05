@@ -35,7 +35,7 @@ public class StopCsvWriter<T extends AbstractPlace> {
 	private static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	public void write(Writer travelFileWriter, List<T> places) throws IOException {
-		CSVFormat csvFileFormat = CSVFormat.DEFAULT.withRecordSeparator("\n");
+		CSVFormat csvFileFormat = CSVFormat.DEFAULT.withDelimiter(';').withRecordSeparator("\n");
 		CSVPrinter travelPrinter = new CSVPrinter(travelFileWriter, csvFileFormat);
 		writeHeader(travelPrinter);
 		
