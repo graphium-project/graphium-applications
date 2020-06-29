@@ -19,8 +19,7 @@ import java.util.Date;
 
 import com.vividsolutions.jts.geom.Point;
 
-import at.srfg.graphium.model.FormOfWay;
-import at.srfg.graphium.model.FuncRoadClass;
+import at.srfg.graphium.model.IWaySegment;
 
 /**
  * Class created to store the stays at a place in form of timeEntry and timeExit.
@@ -35,12 +34,10 @@ public class Stay {
 	private int matchedStays = 0;
 	private double trackLength = 0.0;
 	
-	private double distanceToHighLevelRoad = Double.MAX_VALUE;
-	private FuncRoadClass frcOfNextHighLevelRoad = null;
-	private FormOfWay fowOfNextHighLevelRoad = null;
-	private double distanceToLowLevelRoad = Double.MAX_VALUE;
-	private FuncRoadClass frcOfNextLowLevelRoad = null;
-	private FormOfWay fowOfNextLowLevelRoad = null;
+	private double distanceToHighLevelRoad = -1.0;
+	private IWaySegment nextHighLevelRoadSegment = null;
+	private double distanceToLowLevelRoad = -1.0;
+	private IWaySegment nextLowLevelRoadSegment = null;
 
 	public Stay() {
 		this.point = null;
@@ -136,25 +133,15 @@ public class Stay {
 	}
 
 	/**
-	 * frcOfNextHighLevelRoad
+	 * nextHighLevelRoadSegment
 	 */
-	public FuncRoadClass getFrcOfNextHighLevelRoad() {
-		return frcOfNextHighLevelRoad;
+	public IWaySegment getNextHighLevelRoadSegment() {
+		return nextHighLevelRoadSegment;
 	}
-	public void setFrcOfNextHighLevelRoad(FuncRoadClass frcOfNextHighLevelRoad) {
-		this.frcOfNextHighLevelRoad = frcOfNextHighLevelRoad;
+	public void setNextHighLevelRoadSegment(IWaySegment nextHighLevelRoadSegment) {
+		this.nextHighLevelRoadSegment = nextHighLevelRoadSegment;
 	}
-
-	/**
-	 * fowOfNextHighLevelRoad
-	 */
-	public FormOfWay getFowOfNextHighLevelRoad() {
-		return fowOfNextHighLevelRoad;
-	}
-	public void setFowOfNextHighLevelRoad(FormOfWay fowOfNextHighLevelRoad) {
-		this.fowOfNextHighLevelRoad = fowOfNextHighLevelRoad;
-	}
-
+	
 	/**
 	 * distanceToLowLevelRoad
 	 */
@@ -166,23 +153,13 @@ public class Stay {
 	}
 
 	/**
-	 * frcOfNextLowLevelRoad
+	 * nextLowLevelRoadSegment
 	 */
-	public FuncRoadClass getFrcOfNextLowLevelRoad() {
-		return frcOfNextLowLevelRoad;
+	public IWaySegment getNextLowLevelRoadSegment() {
+		return nextLowLevelRoadSegment;
 	}
-	public void setFrcOfNextLowLevelRoad(FuncRoadClass frcOfNextLowLevelRoad) {
-		this.frcOfNextLowLevelRoad = frcOfNextLowLevelRoad;
-	}
-
-	/**
-	 * fowOfNextLowLevelRoad
-	 */
-	public FormOfWay getFowOfNextLowLevelRoad() {
-		return fowOfNextLowLevelRoad;
-	}
-	public void setFowOfNextLowLevelRoad(FormOfWay fowOfNextLowLevelRoad) {
-		this.fowOfNextLowLevelRoad = fowOfNextLowLevelRoad;
+	public void setNextLowLevelRoadSegment(IWaySegment nextLowLevelRoadSegment) {
+		this.nextLowLevelRoadSegment = nextLowLevelRoadSegment;
 	}
 	
 	@Override
