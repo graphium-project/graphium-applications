@@ -102,8 +102,8 @@
 	</build>
 
 	<properties>
-		<graphium.version>1.1.0-SNAPSHOT</graphium.version>
-		<graphium-neo4j.version>1.0.3</graphium-neo4j.version>
+		<graphium.version>1.1.0</graphium.version>
+		<graphium-neo4j.version>1.1.0</graphium-neo4j.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<slf4j-log4j12.version>1.7.21</slf4j-log4j12.version>
 		<junit.version>4.12</junit.version>
